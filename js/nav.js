@@ -21,19 +21,23 @@ const Nav = {
     });
 
     // Theme toggle
-    document.getElementById('theme-toggle')?.addEventListener('click', () => {
-      Theme.toggle();
-    });
-
-    // Theme toggle inside admin
-    document.querySelectorAll('.theme-toggle-alt').forEach(btn => {
-      btn.addEventListener('click', () => Theme.toggle());
-    });
+    const themeBtn = document.getElementById('theme-toggle');
+    if (themeBtn) {
+      themeBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        Theme.toggle();
+      });
+    }
 
     // Basket button
-    document.getElementById('basket-btn')?.addEventListener('click', () => {
-      Basket.open();
-    });
+    const basketBtn = document.getElementById('basket-btn');
+    if (basketBtn) {
+      basketBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        Basket.open();
+      });
+    }
   },
 
   scrollTo(id) {
