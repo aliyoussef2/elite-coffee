@@ -31,7 +31,6 @@ const DEFAULT_HOURS = [
   { day: 'Sunday',    open: '09:00', close: '22:00', closed: false },
 ];
 
-/* ---- Cached local state, kept in sync with Firestore ---- */
 const Data = {
   rate: 90000,
   waNum: '96170270607',
@@ -39,29 +38,24 @@ const Data = {
   items: [],
   hours: DEFAULT_HOURS,
   images: {},
-  _ready: false,
-  _onReadyCallbacks: [],
-
-  onReady(cb) {
-    if (this._ready) { cb(); } else { this._onReadyCallbacks.push(cb); }
-  },
-
-  _fireReady() {
-    this._ready = true;
-    this._onReadyCallbacks.forEach(cb => cb());
-    this._onReadyCallbacks = [];
-  },
+  _catsLoaded: false,
+  _itemsLoaded: false,
 
   getImage(id) { return this.images[id] || null; },
 
+  _tryRenderMenu() {
+    if (this._catsLoaded && this._itemsLoaded && window.Menu) {
+      Menu.render();
+    }
+  },
+
   async init() {
-    // settings doc
+    // settings
     db.collection('settings').doc('main').onSnapshot(doc => {
       if (doc.exists) {
         const d = doc.data();
         this.rate = d.rate || 90000;
         this.waNum = d.waNum || '96170270607';
-        if (this._ready) { if (window.Menu) Menu.render(); if (window.Hours) Hours.render(); }
       } else {
         db.collection('settings').doc('main').set({ rate: 90000, waNum: '96170270607' });
       }
@@ -70,11 +64,14 @@ const Data = {
     // categories
     db.collection('categories').orderBy('order').onSnapshot(snap => {
       if (snap.empty) {
-        DEFAULT_CATS.forEach((c, i) => db.collection('categories').doc(c.id).set({ name: c.name, order: i }));
+        DEFAULT_CATS.forEach((c, i) =>
+          db.collection('categories').doc(c.id).set({ name: c.name, order: i })
+        );
         return;
       }
       this.cats = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      if (window.Menu) Menu.render();
+      this._catsLoaded = true;
+      this._tryRenderMenu();
     });
 
     // hours
@@ -84,23 +81,19 @@ const Data = {
       } else {
         db.collection('settings').doc('hours').set({ days: DEFAULT_HOURS });
       }
-      if (this._ready) { if (window.Hours) Hours.render(); }
+      if (window.Hours) Hours.render();
     });
 
-    // items (with embedded image as base64 string field "image")
-   db.collection('items').orderBy('createdAt').onSnapshot(snap => {
-  this.items = snap.docs.map(d => {
-    const data = d.data();
-    if (data.image) this.images[d.id] = data.image;
-    return { id: d.id, name: data.name, catId: data.catId, price: data.price, desc: data.desc || '' };
-  });
-  if (window.Menu) {
-    Menu.activeCat = null;
-    Menu.render();
-  }
-});
-
-    this._fireReady();
+    // items
+    db.collection('items').orderBy('createdAt').onSnapshot(snap => {
+      this.items = snap.docs.map(d => {
+        const data = d.data();
+        if (data.image) this.images[d.id] = data.image;
+        return { id: d.id, name: data.name, catId: data.catId, price: data.price, desc: data.desc || '' };
+      });
+      this._itemsLoaded = true;
+      this._tryRenderMenu();
+    });
   },
 };
 
