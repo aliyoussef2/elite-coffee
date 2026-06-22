@@ -37,8 +37,9 @@ let msg = `*New Order - Dopamine*\n`;
       total += it.price;
     });
 
-    const totalLbp = Math.round(total * Data.rate).toLocaleString();
+const totalLbp = Math.round(total * Data.rate).toLocaleString();
     msg += `\n*Total: $${total.toFixed(2)} (${totalLbp} LBP)*`;
+    msg += `\n\n_Delivery fee depends on your location._`;
 
     const waNumber = Data.waNum;
     const url = `https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`;
